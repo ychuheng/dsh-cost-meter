@@ -1,0 +1,9 @@
+# Test overlay for dsh-cost-meter.
+#
+# Applied with `--dump-default-config --patch <this file>` so the row is composed
+# and its specifier resolved WITHOUT mounting anything or touching the live
+# service. The insertion anchor is the global command registry, which every
+# session reads.
+- insert:
+    - id: cost-meter
+      name: dsh-cost-meter

@@ -1,0 +1,16 @@
+# Build output from `node pack.mjs`.
+dist/
+
+# Never commit dependencies.
+node_modules/
+
+# Local DSH state that must never travel: credentials and conversation logs.
+.dsh/
+*.credentials.yaml
+
+# Editor and OS noise.
+.vscode/
+.idea/
+Thumbs.db
+desktop.ini
+*.log

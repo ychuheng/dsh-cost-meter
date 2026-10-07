@@ -1,0 +1,47 @@
+{
+  "name": "dsh-cost-meter",
+  "version": "0.1.0",
+  "description": "Account balance and per-session cost readout for the DSH app: a pill in the composer strip beside the token / cache-hit stats",
+  "type": "module",
+  "main": "lib/index.js",
+  "exports": {
+    ".": {
+      "default": "./lib/index.js"
+    },
+    "./client": {
+      "default": "./lib/client.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "dsh": {
+    "client": {
+      "platform": "web",
+      "inject": [
+        "@deepseek-ai/dsh-client-ui-chat"
+      ]
+    }
+  },
+  "files": [
+    "lib/",
+    "install.mjs",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "install-into-dsh": "node install.mjs",
+    "pack": "node pack.mjs",
+    "test": "node verify-pricing.mjs && node verify-fold.mjs && node verify-client.mjs && node verify-live-pricing.mjs && node verify-offline.mjs && node verify-install.mjs && node verify-host-runtime.mjs"
+  },
+  "keywords": [
+    "dsh",
+    "deepseek-harness",
+    "plugin",
+    "cost",
+    "balance",
+    "usage"
+  ],
+  "engines": {
+    "node": ">=22.19"
+  },
+  "license": "MIT"
+}

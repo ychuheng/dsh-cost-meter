@@ -1,0 +1,16 @@
+# Normalize every text file to LF in the repository, whatever the committer's
+# `core.autocrlf` says. The runtime ships JavaScript that a Windows clone and a
+# POSIX clone must read byte-identically, and a CRLF conversion would also make
+# every subsequent diff appear to rewrite the whole file.
+* text=auto eol=lf
+
+# Binary assets must never be line-ending converted.
+*.png binary
+*.jpg binary
+*.ico binary
+*.zip binary
+*.zstd binary
+
+# Keep the shell entry point executable when the repository is checked out on a
+# POSIX host that supports the mode bit.
+install.mjs text eol=lf
