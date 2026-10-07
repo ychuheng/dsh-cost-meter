@@ -26,6 +26,11 @@ Hover it for the breakdown; click `↻` to re-read the balance.
 
 Two routes. Both need the source on the machine, and both end with a restart.
 
+Both now work because the package declares a **bundle** — `dsh.bundle.patch`
+pointing at its own `cordis.patch.yml`. That declaration is what lets the app's
+plugin manager accept the package at all: without it the manager downloads the
+package successfully and then refuses it with *"this package declares no bundle"*.
+
 ### Route A — the app's own "Add plugin" dialog
 
 1. **Get the source onto the machine first**, since the dialog wants a path:
@@ -38,18 +43,22 @@ Two routes. Both need the source on the machine, and both end with a restart.
    <https://github.com/ychuheng/dsh-cost-meter>. Keep it somewhere permanent.
 
 2. In the dialog, paste the **absolute path to that directory**, for example
-   `D:\tools\dsh-cost-meter`. A relative path is refused.
+   `D:\tools\dsh-cost-meter`. A relative path is refused. The git URL works too.
 
    The manager runs `pnpm add <path>` through the app's own bundled package
    manager, so no system-wide `pnpm` is needed.
 
-3. Restart — see "Restart the app" below.
+3. **Enable the bundle** if the manager lists it as a new bundle to select. A
+   bundle is applied only while it is enabled; installing it is not the same as
+   switching it on. This is the one step whose wording differs between DSH
+   versions, so if no such control appears, use Route B instead.
 
-The manager only puts the package into the profile's `node_modules`. It does
-**not** create the Loader row, so the plugin still needs its row in
-`cordis.patch.yml`; Route B writes that for you, which is why B is recommended.
+4. Restart — see "Restart the app" below.
 
 ### Route B — the bundled installer (recommended)
+
+Route B is recommended because it writes both halves — the link into the profile
+and the Loader row — so its result does not depend on any bundle-selection UI.
 
 #### 1. Get the source somewhere permanent
 

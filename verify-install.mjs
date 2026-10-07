@@ -10,7 +10,7 @@
  * settings must never be one parse away from deletion, so every case here checks
  * that prior content survives verbatim.
  */
-import { appendEntry, hasOwnRow, PATCH_ROW } from './install.mjs'
+import { appendEntry, declaresBundle, hasOwnRow, PATCH_ROW, removeOwnRow } from './install.mjs'
 
 let failures = 0
 
@@ -96,6 +96,52 @@ console.log('--- idempotence: the row is detectable before appending ---')
   // appendEntry itself is pure; the caller is what guards with hasOwnRow. This
   // asserts that a second naive append is DETECTABLE, which is the guard's job.
   check('a second append would duplicate the row (hence the guard)', occurrences, 2)
+}
+
+console.log('--- the package declares a bundle, so no row is hand-written ---')
+{
+  check('declaresBundle() reads the manifest', declaresBundle(), true)
+}
+
+console.log('--- removing a stale hand-written row spares everything else ---')
+{
+  const userA = `- id: ui-chat
+  name: "@deepseek-ai/dsh-client-ui-chat"
+  config:
+    transcriptView: standard`
+  const userB = `- id: agent-default-model
+  name: "@deepseek-ai/dsh-agent-default-model"
+  config:
+    model: deepseek-flash`
+
+  // The dangerous direction: removal must not touch a neighbour.
+  const between = `# header\n${userA}\n\n${PATCH_ROW.trimEnd()}\n\n${userB}\n`
+  const removed = removeOwnRow(between)
+  checkTruthy('the earlier entry survives', removed.includes('ui-chat'))
+  checkTruthy('the later entry survives', removed.includes('agent-default-model'))
+  checkTruthy('the comment header survives', removed.includes('# header'))
+  check('our row is gone', hasOwnRow(removed), false)
+  checkTruthy('no triple blank line is left behind', !/\n{3,}/.test(removed))
+
+  // Row first, row last, and row alone.
+  const first = removeOwnRow(`${PATCH_ROW.trimEnd()}\n\n${userA}\n`)
+  checkTruthy('row-first removal keeps the neighbour', first.includes('ui-chat'))
+  check('row-first removal drops our row', hasOwnRow(first), false)
+
+  const last = removeOwnRow(`${userA}\n\n${PATCH_ROW.trimEnd()}\n`)
+  checkTruthy('row-last removal keeps the neighbour', last.includes('ui-chat'))
+  check('row-last removal drops our row', hasOwnRow(last), false)
+
+  const alone = removeOwnRow(PATCH_ROW)
+  check('row-alone removal leaves no row', hasOwnRow(alone), false)
+
+  // A file with no such row must come back untouched, byte for byte.
+  const untouched = `${PATCH_ROW.replace(/dsh-cost-meter/g, 'some-other-plugin')}\n`
+  check('a file without our row is returned unchanged', removeOwnRow(untouched), untouched)
+
+  // The removal must not be fooled by a comment merely mentioning the name.
+  const mention = '# dsh-cost-meter is not installed here\n- id: x\n  name: "@deepseek-ai/dsh-x"\n'
+  check('a comment mentioning the name is not removed', removeOwnRow(mention), mention)
 }
 
 console.log('--- the patch row is valid YAML shape and self-consistent ---')

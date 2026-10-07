@@ -65,9 +65,88 @@ function parseArgs(argv) {
   return options
 }
 
+/**
+ * Whether this plugin's Loader row is present.
+ *
+ * The name is matched against one LINE, and the `\s` seen elsewhere is avoided on
+ * purpose: `\s` matches a newline, so a pattern like `\s*name:\s*dsh-cost-meter\s*$`
+ * can walk across a line break and report a row that is not there — or, without the
+ * `m` flag, fail to match a row that is. Only spaces and tabs are horizontal here.
+ */
+const OWN_ROW_NAME = /^[ \t]*name:[ \t]*['"]?dsh-cost-meter['"]?[ \t]*$/m
+
 /** Whether the patch text already carries this plugin's row. */
 function hasOwnRow(text) {
-  return /^\s*name:\s*['"]?dsh-cost-meter['"]?\s*$/m.test(text)
+  return OWN_ROW_NAME.test(text)
+}
+
+/**
+ * Index of this plugin's `name:` line in a pre-split line array, or -1.
+ *
+ * @param lines - the patch file split on newlines.
+ * @returns the 0-based line index.
+ */
+function ownRowLineIndex(lines) {
+  return lines.findIndex((line) => /^[ \t]*name:[ \t]*['"]?dsh-cost-meter['"]?[ \t]*$/.test(line))
+}
+
+/** Whether this package declares a bundle patch, which mounts it by itself. */
+function declaresBundle() {
+  try {
+    const manifest = JSON.parse(readFileSync(join(HERE, 'package.json'), 'utf8'))
+    const patch = manifest?.dsh?.bundle?.patch
+    return typeof patch === 'string' && patch.length > 0
+  } catch {
+    return false
+  }
+}
+
+/**
+ * Remove a previously written row for this plugin, leaving everything else alone.
+ *
+ * Needed when upgrading an install made by an earlier revision: before the package
+ * declared `dsh.bundle.patch`, the installer had to hand-write a row, and keeping
+ * that row beside the bundle patch would mount the plugin twice under one id.
+ *
+ * The block is located by its `name:` line and removed outward to the enclosing
+ * top-level entry, so comments above it go too and a neighbouring entry is never
+ * touched. Returns the text unchanged when no such row exists.
+ *
+ * @param text - the patch file's contents.
+ * @returns the contents without this plugin's row.
+ */
+function removeOwnRow(text) {
+  const lines = text.split(/\r?\n/)
+  const nameAt = ownRowLineIndex(lines)
+  if (nameAt < 0) return text
+
+  // The entry's own opening line: the nearest column-zero `- ` at or above the
+  // name. An indented `    - id: …` never matches, which is what keeps a nested
+  // row from being mistaken for the opening line.
+  const TOP_LEVEL_ENTRY = /^- /
+  let entryAt = nameAt
+  while (entryAt > 0 && !TOP_LEVEL_ENTRY.test(lines[entryAt])) entryAt -= 1
+  if (!TOP_LEVEL_ENTRY.test(lines[entryAt])) return text
+
+  // The entry ends at the next column-zero `- ` BELOW its opening line. Searching
+  // from anywhere else is wrong: the opening line itself matches this pattern, so
+  // a search starting above it stops immediately and leaves the row behind.
+  let endAt = entryAt + 1
+  while (endAt < lines.length && !TOP_LEVEL_ENTRY.test(lines[endAt])) endAt += 1
+
+  // The documented comment block immediately above travels with the entry, plus
+  // one blank separator line so nothing is left double-spaced.
+  let cutFrom = entryAt
+  while (cutFrom > 0 && /^[ \t]*#/.test(lines[cutFrom - 1])) cutFrom -= 1
+  if (cutFrom > 0 && lines[cutFrom - 1].trim() === '') cutFrom -= 1
+
+  const kept = lines.slice(0, cutFrom).concat(lines.slice(endAt))
+
+  // A file that held only this row keeps its comment header, trimmed.
+  if (kept.every((line) => line.trim() === '' || /^[ \t]*#/.test(line))) {
+    return kept.join('\n').replace(/\s+$/u, '') + '\n'
+  }
+  return kept.join('\n').replace(/\n{3,}/g, '\n\n').replace(/[ \t]+$/gmu, '').replace(/\s+$/u, '') + '\n'
 }
 
 /**
@@ -175,7 +254,16 @@ function main(options) {
     }
     console.log(`    link      : ${linkPath} (${options.dryRun ? 'would be created' : linkState})`)
 
-    // 2. Add the Loader row, additively and idempotently.
+    // 2. The Loader row.
+    //
+    // The row is written even though the package now declares its own bundle
+    // patch. The reason is verification, not redundancy: the installer's row is
+    // the path that has actually been exercised, while whether a declared bundle
+    // is auto-applied depends on the profile's bundle selection — a bundle has to
+    // be ENABLED, and that selection lives in the app. Writing the row makes the
+    // installer's result independent of that. Loader patches are keyed by id, so
+    // the bundle's own row and this one describe the same entry rather than
+    // mounting two.
     const text = readFileSync(patchPath, 'utf8')
     if (hasOwnRow(text)) {
       console.log(`    patch     : already contains a ${PACKAGE_NAME} row, left unchanged`)
@@ -215,4 +303,4 @@ if (isEntryPoint) {
   process.exit(main(options))
 }
 
-export { PACKAGE_NAME, PATCH_ROW, appendEntry, hasOwnRow, parseArgs }
+export { PACKAGE_NAME, PATCH_ROW, appendEntry, declaresBundle, hasOwnRow, ownRowLineIndex, parseArgs, removeOwnRow }

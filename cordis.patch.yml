@@ -1,0 +1,21 @@
+# dsh-cost-meter as a DSH bundle.
+#
+# A package the plugin manager will accept must declare `dsh.bundle.patch`, and
+# that patch is how the plugin gets mounted: the manager rejected an earlier
+# revision with "this package declares no bundle", because only `dsh.client` was
+# declared.
+#
+# The single row is the Loader entry that mounts the host half. The browser half
+# needs no row of its own: `dsh.client` publishes it and the client module system
+# discovers it from the package manifest.
+#
+# `apiKeyEnv` names a credential REFERENCE; the value is resolved per operation
+# through the credentials service and never enters configuration. `balanceBaseURL`
+# is deliberately independent of $DEEPSEEK_BASE_URL, which may point at an
+# internal gateway that does not serve /user/balance.
+- insert:
+    - id: cost-meter
+      name: dsh-cost-meter
+      config:
+        apiKeyEnv: DEEPSEEK_API_KEY
+        balanceBaseURL: https://api.deepseek.com
