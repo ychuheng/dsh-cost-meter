@@ -40,6 +40,14 @@
     "balance",
     "usage"
   ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ychuheng/dsh-cost-meter.git"
+  },
+  "homepage": "https://github.com/ychuheng/dsh-cost-meter#readme",
+  "bugs": {
+    "url": "https://github.com/ychuheng/dsh-cost-meter/issues"
+  },
   "engines": {
     "node": ">=22.19"
   },

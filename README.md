@@ -24,18 +24,47 @@ Hover it for the breakdown; click `↻` to re-read the balance.
 
 ## Install
 
-### 1. Get the files somewhere permanent
+Two routes. Both need the source on the machine, and both end with a restart.
 
-Unzip this package to a directory you will keep, for example:
+### Route A — the app's own "Add plugin" dialog
+
+1. **Get the source onto the machine first**, since the dialog wants a path:
+
+   ```
+   git clone https://github.com/ychuheng/dsh-cost-meter.git
+   ```
+
+   or download and extract the ZIP from
+   <https://github.com/ychuheng/dsh-cost-meter>. Keep it somewhere permanent.
+
+2. In the dialog, paste the **absolute path to that directory**, for example
+   `D:\tools\dsh-cost-meter`. A relative path is refused.
+
+   The manager runs `pnpm add <path>` through the app's own bundled package
+   manager, so no system-wide `pnpm` is needed.
+
+3. Restart — see "Restart the app" below.
+
+The manager only puts the package into the profile's `node_modules`. It does
+**not** create the Loader row, so the plugin still needs its row in
+`cordis.patch.yml`; Route B writes that for you, which is why B is recommended.
+
+### Route B — the bundled installer (recommended)
+
+#### 1. Get the source somewhere permanent
 
 ```
-D:\tools\dsh-cost-meter
+git clone https://github.com/ychuheng/dsh-cost-meter.git
+cd dsh-cost-meter
 ```
+
+Or extract the ZIP from <https://github.com/ychuheng/dsh-cost-meter> to a
+directory you will keep, for example `D:\tools\dsh-cost-meter`.
 
 Do **not** install from inside a temporary folder or a zip preview — the DSH
 profile links to this directory, so moving or deleting it breaks the plugin.
 
-### 2. Run the installer
+#### 2. Run the installer
 
 ```
 node install.mjs
@@ -57,13 +86,13 @@ The installer does two things and reports a third:
    Your existing entries and comments are preserved verbatim, and running it twice
    changes nothing.
 
-### 3. Restart the app
+### Restart the app
 
 **Fully quit and reopen** — including the tray icon. A DSH profile is composed at
 startup and there is no hot reload for this layer, so the pill will not appear
 until a restart.
 
-### 4. Make sure a key is available
+### Make sure a key is available
 
 The balance needs a DeepSeek API key under the credential reference named in the
 patch row (default `DEEPSEEK_API_KEY`). Store it in **Settings → Models**, or
